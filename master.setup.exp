@@ -1,0 +1,156 @@
+#!/usr/bin/expect
+
+set host [lindex $argv 0]
+
+spawn ssh root@$host
+
+expect {
+    "Are you sure you want to continue connecting (yes/no)?" {
+        send "yes\r"; exp_continue;
+    }
+    ":~#"
+}
+
+send "adduser tomjoad\r"
+expect "Enter new UNIX password:" 
+send "pw_easy_440_!\r"
+expect "Retype new UNIX password:"
+send "pw_easy_440_!\r"
+
+expect "Full Name"
+send "\r"
+expect "Room Number"
+send "\r"
+expect "Work Phone"
+send "\r"
+expect "Home Phone"
+send "\r"
+expect "Other"
+send "\r"
+expect "Is the information correct?"
+send "Y\r"
+
+expect ":~#"
+
+send "gpasswd -a tomjoad sudo\r"
+expect "Adding user tomjoad to group sudo"
+expect ":~#"
+send "exit\r"
+
+
+spawn ssh-copy-id tomjoad@$host
+expect {
+    "*assword:"
+    {
+        send "pw_easy_440_!\r"
+        expect {
+            timeout {
+                send_user "did key get added?"
+                interact
+                exit
+            }
+            "Number of key(s) added: 1"
+        }
+    }
+}
+
+expect {
+    timeout {
+        send_user "should have gotten prompt after password enter"
+        send_user "Try to fix this please"
+        interact
+        exit
+    }
+    ">"
+}
+
+spawn ssh tomjoad@$host
+expect {
+    timeout {
+        send_user "Failed to get prompt after ssh as tomjoad";
+        interact
+        exit
+    }
+    "Are you sure you want to continue connecting (yes/no)?" {
+        send "yes\r"; exp_continue
+    }
+    ":~\\$"
+}
+
+send "echo 'alias vim=vim.tiny' >> ~/.bashrc\r"
+expect ":~\\$"
+
+send "sudo sed -i -e 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config\r"
+expect {
+    timeout {
+        send_user "didn't get pw prompt or prompt after sudo sed"
+        interact
+        exit
+    }
+    "*assword*:" {
+        send "pw_easy_440_!\r"
+        exp_continue
+    }
+    ":~\\$"
+}
+
+send "sudo systemctl restart ssh.service\r"
+expect {
+    timeout {
+        send_user "didn't get pw prompt or prompt after sudo sed"
+        interact
+        exit
+    }
+    "*assword*:" {
+        send "pw_easy_440_!\r"
+        exp_continue
+    }
+    ":~\\$"
+}
+
+send "echo \"America/Chicago\" | sudo tee /etc/timezone\r"
+expect ":~\\$"
+
+
+send "sudo add-apt-repository ppa:saltstack/salt\r"
+expect {
+    "to cancel adding it" {
+        send "\r"; exp_continue
+    }
+    ":~\\$"
+}
+
+send "sudo apt-get update\r"
+expect {
+    -timeout 120
+    ":~\\$"
+}
+
+send "sudo apt-get install salt-master\r"
+expect "Do you want to continue?"
+send "Y\r"
+expect {
+    -timeout 120
+    ":~\\$"
+}
+
+send "sudo sed -i -e 's/#interface: 0\.0\.0\.0/interface: 0\.0\.0\.0/' /etc/salt/master"
+expect {
+    timeout {
+        send_user "didn't get pw prompt or prompt after sudo sed"
+        interact
+        exit
+    }
+    "*assword*:" {
+        send "pw_easy_440_!\r"
+        exp_continue
+    }
+    ":~\\$"
+}
+
+send "exit\r"
+
+
+send_user "Finished with what we've got so far"
+interact
+
