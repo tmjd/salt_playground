@@ -1,0 +1,44 @@
+#!/usr/bin/expect
+
+set host [lindex $argv 0]
+set master [lindex $argv 1]
+
+spawn ssh root@$host
+
+expect {
+    "Are you sure you want to continue connecting (yes/no)?" {
+        send "yes\r"; exp_continue;
+    }
+    ":~#"
+}
+
+send "echo \"America/Chicago\" | tee /etc/timezone\r"
+expect ":~#"
+
+
+send "add-apt-repository ppa:saltstack/salt\r"
+expect {
+    "to cancel adding it" {
+        send "\r"; exp_continue
+    }
+    ":~#"
+}
+
+send "apt-get update\r"
+expect {
+    -timeout 180
+    ":~#"
+}
+
+send "sudo apt-get install salt-minion\r"                                       
+expect "Do you want to continue?"                                               
+send "Y\r"                                                                      
+expect {                                                                        
+    -timeout 120                                                                
+    ":~#"                                                                     
+} 
+
+send "echo 'master: $master' > /etc/salt/minion\r"
+
+send "systemctl start salt-minion\r"
+interact
