@@ -2,7 +2,7 @@
 
 set host [lindex $argv 0]
 
-spawn ssh root@$host
+spawn ssh -o StrictHostKeyChecking=no root@$host
 
 expect {
     "Are you sure you want to continue connecting (yes/no)?" {
@@ -37,6 +37,8 @@ expect "Adding user tomjoad to group sudo"
 expect ":~#"
 send "exit\r"
 
+send "scp pre_salt/salt_master.conf root@$host:/root/salt_master.conf\r"
+send "scp -r srv/* root@host:/srv/\r"
 
 spawn ssh-copy-id tomjoad@$host
 expect {
@@ -130,11 +132,11 @@ send "sudo apt-get install salt-master\r"
 expect "Do you want to continue?"
 send "Y\r"
 expect {
-    -timeout 120
+    -timeout 180
     ":~\\$"
 }
 
-send "sudo sed -i -e 's/#interface: 0\.0\.0\.0/interface: 0\.0\.0\.0/' /etc/salt/master"
+send "sudo cp /root/salt_master.conf /etc/salt/master"
 expect {
     timeout {
         send_user "didn't get pw prompt or prompt after sudo sed"
@@ -148,9 +150,9 @@ expect {
     ":~\\$"
 }
 
+send "sudo systemctl start salt-master"
+
 send "exit\r"
 
 
-send_user "Finished with what we've got so far"
-interact
 
