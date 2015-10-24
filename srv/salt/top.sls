@@ -1,3 +1,4 @@
 base:
     '*':
         - editors.vim
+        - zookeeper
