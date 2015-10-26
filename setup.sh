@@ -18,7 +18,6 @@ function init_ssh_host
     if [ $? -ne 0 ]; then
         echo "Failed removing key $host"; cat $tmp_file; return 1;
     fi
-    echo -n "SSH init $host: "
     ssh -o StrictHostKeyChecking=no root@$host 'uname -a' &> $tmp_file
     if [ $? -ne 0 ]; then
         echo "Failed initial login to $host"; cat $tmp_file; return 1;
@@ -127,13 +126,13 @@ if [ \$? -ne 0 ]; then
     cat \$tmp_file
     exit 1
 fi
-echo "Adding salt repo"
+echo "  Adding salt repo"
 add-apt-repository --yes ppa:saltstack/salt &> \$tmp_file
 if [ \$? -ne 0 ]; then echo "Failed ppa add:"; cat \$tmp_file; exit 1; fi
-echo "Updating apt \$(hostname)"
+echo "  Updating apt \$(hostname)"
 apt-get update &> \$tmp_file
 if [ \$? -ne 0 ]; then echo "Failed apt update:"; cat \$tmp_file; exit 1; fi
-echo "Installing salt-master"
+echo "  Installing salt-master"
 apt-get install --yes salt-master &> \$tmp_file
 if [ \$? -ne 0 ]; then echo "Failed install master:"; cat \$tmp_file; exit 1; fi
 EOT
@@ -159,13 +158,21 @@ trap finish EXIT
 echo 'America/Chicago' > /etc/timezone
 echo "  Adding salt repo"
 add-apt-repository --yes ppa:saltstack/salt &> \$tmp_file
-if [ \$? -ne 0 ]; then echo "Failed ppa add:"; cat \$tmp_file; exit; fi
+if [ \$? -ne 0 ]; then echo "Failed ppa add:"; cat \$tmp_file; exit 1; fi
 echo "  Updating apt \$(hostname -s)"
 apt-get update &> \$tmp_file
-if [ \$? -ne 0 ]; then echo "Failed:"; cat \$tmp_file; exit; fi
+if [ \$? -ne 0 ]; then echo "Failed apt update:"; cat \$tmp_file; exit 1; fi
 echo "  Installing salt-minion \$(hostname)"
 apt-get install --yes salt-minion &> \$tmp_file
-if [ \$? -ne 0 ]; then echo "Failed:"; cat \$tmp_file; exit; fi
+if [ \$? -ne 0 ]; then
+    echo "Failed install of salt-minion trying again";
+    apt-get install --yes salt-minion &> \$tmp_file
+    if [ \$? -ne 0 ]; then
+        echo "Failed retry of install of salt-minion";
+        cat \$tmp_file;
+        exit 1;
+    fi
+fi
 echo '$(getent hosts saltmaster | awk '{ print $1 }') salt' >> /etc/hosts
 systemctl start salt-minion
 EOT
@@ -188,5 +195,12 @@ for minion in $minions; do
     if [ $? -ne 0 ]; then echo "Failed accepting $minion"; continue; fi
     echo "Accepted minion $minion"
 done
+
+sleep 5
+ssh root@$master "salt '*' state.highstate"
+if [ $? -ne 0 ]; then
+    echo "##==> Failed bringing up highstate <==##"
+fi
+
 
 echo "done"
