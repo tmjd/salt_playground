@@ -174,6 +174,7 @@ if [ \$? -ne 0 ]; then
     fi
 fi
 echo '$(getent hosts saltmaster | awk '{ print $1 }') salt' >> /etc/hosts
+echo 'mine_interval: 5' > /etc/salt/minion.d/minion.conf
 systemctl start salt-minion
 EOT
 
