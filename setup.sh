@@ -191,13 +191,31 @@ done
 echo "sleep for 10 to let all minions connect"
 sleep 10
 
+all_accepted=1
 for minion in $minions; do
     ssh root@$master "salt-key -a $minion -y" &> $tmp_file
-    if [ $? -ne 0 ]; then echo "Failed accepting $minion"; continue; fi
+    ssh root@$master "salt-key --list=accepted" | grep --quiet $minion
+    if [ $? -ne 0 ]; then
+        echo "Failed accepting $minion, retrying"
+        sleep 5
+        ssh root@$master "salt-key -a $minion -y" &> $tmp_file
+    fi
+    ssh root@$master "salt-key --list=accepted" | grep --quiet $minion
+    if [ $? -ne 0 ]; then
+        echo "Failed accepting $minion"
+        all_accepted=0
+        continue
+    fi
     echo "Accepted minion $minion"
 done
 
-sleep 5
+if [ $all_accepted -ne 1 ]; then
+    echo "Not all minions were accepted"
+    ssh root@$master "salt-key --list=un"
+    exit 1
+fi
+
+
 ssh root@$master "salt '*' state.highstate"
 if [ $? -ne 0 ]; then
     echo "##==> Failed bringing up highstate <==##"
