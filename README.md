@@ -1,14 +1,14 @@
 To use this playground you need a DigitalOcean(DO) account, SSH keys setup on
 DO, and a DO Personal Access Token.
 
-To run setup.sh:
+To run setup.sh
 # Create a private.sh in the same folder as this README
 #* Add 'export DO_PAT="<your personal access token goes here>"'
 #* Add 'export SSH_FINGERPRINT="<DO ssh fingerprint goes here>"'
 #** I found this by going to the API page and looking at the page source and found the fingerprint there, it was a 7 digit number
 # Now you're ready to run setup.sh 
 
-Running setup.sh:
+Running setup.sh
 The syntax for running setup.sh:
 * Create and start VMs and create a salt master and minions the master will manage
  ./setup.sh saltmaster minion1 zoominion1 zoominion2
