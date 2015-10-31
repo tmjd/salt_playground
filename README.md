@@ -5,8 +5,8 @@ To run setup.sh
 ---------------
 
 0. Create a private.sh in the same folder as this README
-    * Add 'export DO_PAT="<your personal access token goes here>"'
-    * Add 'export SSH_FINGERPRINT="<DO ssh fingerprint goes here>"'
+    * Add `export DO_PAT="<your personal access token goes here>"`
+    * Add `export SSH_FINGERPRINT="<DO ssh fingerprint goes here>"`
         * I found this by going to the API page and looking at the page source and found the fingerprint there, it was a 7 digit number
 0. Now you're ready to run setup.sh 
 
